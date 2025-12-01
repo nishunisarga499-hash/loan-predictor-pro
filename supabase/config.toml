@@ -1,0 +1,4 @@
+project_id = "klyzphjtupwlnnwzsjzy"
+
+[functions.predict-loan-default]
+verify_jwt = false
