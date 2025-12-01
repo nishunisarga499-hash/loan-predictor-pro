@@ -1,0 +1,1 @@
+ALTER TABLE loan_predictions ENABLE ROW LEVEL SECURITY
