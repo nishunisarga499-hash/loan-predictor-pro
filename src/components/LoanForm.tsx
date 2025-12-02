@@ -24,8 +24,8 @@ export interface LoanFormData {
 
 export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
   const [formData, setFormData] = useState<LoanFormData>({
-    loanAmount: 25000,
-    annualIncome: 60000,
+    loanAmount: 500000,
+    annualIncome: 600000,
     creditScore: 700,
     employmentLength: 3,
     debtToIncomeRatio: 0.35,
@@ -54,8 +54,8 @@ export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
               type="number"
               value={formData.loanAmount}
               onChange={(e) => updateField('loanAmount', Number(e.target.value))}
-              min="1000"
-              step="1000"
+              min="50000"
+              step="50000"
               required
             />
           </div>
@@ -67,8 +67,8 @@ export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
               type="number"
               value={formData.annualIncome}
               onChange={(e) => updateField('annualIncome', Number(e.target.value))}
-              min="10000"
-              step="1000"
+              min="100000"
+              step="50000"
               required
             />
           </div>
