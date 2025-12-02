@@ -1,7 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, XCircle, AlertCircle, Download } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from "recharts";
+import { jsPDF } from "jspdf";
+import { useToast } from "@/hooks/use-toast";
 
 interface PredictionResultProps {
   result: {
@@ -20,6 +23,7 @@ interface PredictionResultProps {
 
 export function PredictionResult({ result }: PredictionResultProps) {
   const { defaultProbability, riskLevel, approved, factors } = result;
+  const { toast } = useToast();
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -35,6 +39,164 @@ export function PredictionResult({ result }: PredictionResultProps) {
     { name: 'Approval Score', value: 100 - defaultProbability, color: 'hsl(var(--success))' }
   ];
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const currentDate = new Date().toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Header
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("Loan Default Prediction Report", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated on: ${currentDate}`, pageWidth / 2, 32, { align: "center" });
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Decision Section
+    let yPos = 55;
+    
+    if (approved) {
+      doc.setFillColor(220, 252, 231);
+    } else {
+      doc.setFillColor(254, 226, 226);
+    }
+    doc.roundedRect(15, yPos - 8, pageWidth - 30, 25, 3, 3, 'F');
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    if (approved) {
+      doc.setTextColor(22, 163, 74);
+    } else {
+      doc.setTextColor(220, 38, 38);
+    }
+    doc.text(
+      approved ? "LOAN APPROVED" : "LOAN DENIED",
+      pageWidth / 2,
+      yPos + 5,
+      { align: "center" }
+    );
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+    yPos += 35;
+
+    // Risk Assessment Section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Risk Assessment Summary", 15, yPos);
+    yPos += 10;
+
+    doc.setDrawColor(229, 231, 235);
+    doc.line(15, yPos, pageWidth - 15, yPos);
+    yPos += 10;
+
+    // Risk metrics
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    
+    const metrics = [
+      { label: "Default Probability", value: `${defaultProbability.toFixed(1)}%` },
+      { label: "Risk Level", value: riskLevel.toUpperCase() },
+      { label: "Decision", value: approved ? "Approved" : "Denied" }
+    ];
+
+    metrics.forEach((metric, index) => {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(metric.label + ":", 15, yPos);
+      
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(metric.value, 80, yPos);
+      yPos += 8;
+    });
+
+    yPos += 10;
+
+    // Key Risk Factors Section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Key Risk Factors", 15, yPos);
+    yPos += 10;
+
+    doc.setDrawColor(229, 231, 235);
+    doc.line(15, yPos, pageWidth - 15, yPos);
+    yPos += 10;
+
+    const riskFactors = [
+      { label: "Credit Score", value: factors.creditScore.toString() },
+      { label: "Debt-to-Income Ratio", value: `${(factors.debtToIncomeRatio * 100).toFixed(1)}%` },
+      { label: "Loan-to-Income Ratio", value: factors.loanToIncomeRatio.toFixed(2) },
+      { label: "Employment Length", value: `${factors.employmentLength} years` },
+      { label: "Previous Defaults", value: factors.previousDefaults.toString() }
+    ];
+
+    doc.setFontSize(11);
+    riskFactors.forEach((factor) => {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(factor.label + ":", 15, yPos);
+      
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(factor.value, 80, yPos);
+      yPos += 8;
+    });
+
+    yPos += 15;
+
+    // Risk Analysis Box
+    doc.setFillColor(249, 250, 251);
+    doc.roundedRect(15, yPos, pageWidth - 30, 35, 3, 3, 'F');
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(55, 65, 81);
+    doc.text("Analysis Notes:", 20, yPos + 10);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const analysisText = approved
+      ? "Based on the provided financial metrics, this application shows acceptable risk levels. The credit score and debt-to-income ratio are within acceptable ranges for loan approval."
+      : "This application presents elevated risk factors. The combination of credit score, debt levels, and other factors suggest a higher probability of default.";
+    
+    const splitText = doc.splitTextToSize(analysisText, pageWidth - 50);
+    doc.text(splitText, 20, yPos + 18);
+
+    // Footer
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    doc.setDrawColor(229, 231, 235);
+    doc.line(15, footerY - 5, pageWidth - 15, footerY - 5);
+    
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text("This report is generated by Loan Default Predictor - For informational purposes only", pageWidth / 2, footerY, { align: "center" });
+    doc.text("Page 1 of 1", pageWidth / 2, footerY + 5, { align: "center" });
+
+    // Save the PDF
+    doc.save(`loan-prediction-report-${Date.now()}.pdf`);
+    
+    toast({
+      title: "PDF Exported",
+      description: "Your prediction report has been downloaded.",
+    });
+  };
+
   return (
     <Card className="p-6 shadow-custom-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-6">
@@ -45,7 +207,11 @@ export function PredictionResult({ result }: PredictionResultProps) {
               {riskLevel.toUpperCase()} RISK
             </Badge>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={exportToPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
             {approved ? (
               <CheckCircle2 className="h-12 w-12 text-success" />
             ) : (
