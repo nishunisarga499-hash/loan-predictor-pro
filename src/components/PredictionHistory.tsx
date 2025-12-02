@@ -91,7 +91,7 @@ export function PredictionHistory() {
                   <TrendingDown className="h-5 w-5 text-destructive" />
                 )}
                 <span className="font-semibold">
-                  ${pred.loan_amount.toLocaleString()}
+                  ₹{pred.loan_amount.toLocaleString('en-IN')}
                 </span>
               </div>
               <Badge variant={getRiskBadgeVariant(pred.risk_level)}>
@@ -102,7 +102,7 @@ export function PredictionHistory() {
               <div>
                 <span className="block">Income</span>
                 <span className="font-medium text-foreground">
-                  ${pred.annual_income.toLocaleString()}
+                  ₹{pred.annual_income.toLocaleString('en-IN')}
                 </span>
               </div>
               <div>

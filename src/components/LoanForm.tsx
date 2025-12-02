@@ -48,7 +48,7 @@ export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="loanAmount">Loan Amount ($)</Label>
+            <Label htmlFor="loanAmount">Loan Amount (₹)</Label>
             <Input
               id="loanAmount"
               type="number"
@@ -61,7 +61,7 @@ export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="annualIncome">Annual Income ($)</Label>
+            <Label htmlFor="annualIncome">Annual Income (₹)</Label>
             <Input
               id="annualIncome"
               type="number"
