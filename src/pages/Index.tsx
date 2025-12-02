@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { LoanForm, LoanFormData } from "@/components/LoanForm";
 import { PredictionResult } from "@/components/PredictionResult";
 import { PredictionHistory } from "@/components/PredictionHistory";
+import { UserMenu } from "@/components/UserMenu";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Shield, BarChart3 } from "lucide-react";
+import { TrendingUp, Shield, BarChart3, Loader2 } from "lucide-react";
 
 interface PredictionResponse {
   defaultProbability: number;
@@ -22,7 +25,16 @@ interface PredictionResponse {
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [predictionResult, setPredictionResult] = useState<PredictionResponse | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (formData: LoanFormData) => {
     setIsLoading(true);
@@ -40,7 +52,7 @@ const Index = () => {
       });
 
       // Refresh history
-      window.dispatchEvent(new Event('prediction-complete'));
+      setHistoryKey(prev => prev + 1);
     } catch (error) {
       console.error('Error predicting loan default:', error);
       toast({
@@ -53,11 +65,26 @@ const Index = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="gradient-hero text-white py-16 px-4">
         <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-end mb-4">
+            <UserMenu />
+          </div>
           <div className="text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
               <Shield className="h-8 w-8" />
@@ -123,8 +150,8 @@ const Index = () => {
           )}
 
           <div>
-            <h2 className="text-2xl font-bold mb-4">History</h2>
-            <PredictionHistory />
+            <h2 className="text-2xl font-bold mb-4">Your Prediction History</h2>
+            <PredictionHistory key={historyKey} />
           </div>
         </div>
       </div>
