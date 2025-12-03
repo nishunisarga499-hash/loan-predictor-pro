@@ -27,33 +27,187 @@ serve(async (req) => {
 
     // ML-based risk calculation using multiple factors
     let riskScore = 0;
+    const reasons: { factor: string; impact: string; description: string; severity: 'positive' | 'warning' | 'negative' }[] = [];
 
     // Credit score factor (0-40 points)
-    if (creditScore < 580) riskScore += 40;
-    else if (creditScore < 670) riskScore += 30;
-    else if (creditScore < 740) riskScore += 15;
-    else if (creditScore < 800) riskScore += 5;
+    if (creditScore < 580) {
+      riskScore += 40;
+      reasons.push({
+        factor: 'Credit Score',
+        impact: '+40 risk points',
+        description: `Very poor credit score (${creditScore}). Scores below 580 indicate high credit risk.`,
+        severity: 'negative'
+      });
+    } else if (creditScore < 670) {
+      riskScore += 30;
+      reasons.push({
+        factor: 'Credit Score',
+        impact: '+30 risk points',
+        description: `Fair credit score (${creditScore}). Scores between 580-669 indicate moderate credit risk.`,
+        severity: 'warning'
+      });
+    } else if (creditScore < 740) {
+      riskScore += 15;
+      reasons.push({
+        factor: 'Credit Score',
+        impact: '+15 risk points',
+        description: `Good credit score (${creditScore}). This is within acceptable lending range.`,
+        severity: 'warning'
+      });
+    } else if (creditScore < 800) {
+      riskScore += 5;
+      reasons.push({
+        factor: 'Credit Score',
+        impact: '+5 risk points',
+        description: `Very good credit score (${creditScore}). Excellent creditworthiness.`,
+        severity: 'positive'
+      });
+    } else {
+      reasons.push({
+        factor: 'Credit Score',
+        impact: '+0 risk points',
+        description: `Exceptional credit score (${creditScore}). Outstanding creditworthiness.`,
+        severity: 'positive'
+      });
+    }
 
     // Debt-to-income ratio factor (0-25 points)
-    if (debtToIncomeRatio > 0.5) riskScore += 25;
-    else if (debtToIncomeRatio > 0.4) riskScore += 18;
-    else if (debtToIncomeRatio > 0.3) riskScore += 10;
-    else if (debtToIncomeRatio > 0.2) riskScore += 5;
+    if (debtToIncomeRatio > 0.5) {
+      riskScore += 25;
+      reasons.push({
+        factor: 'Debt-to-Income Ratio',
+        impact: '+25 risk points',
+        description: `Very high DTI (${(debtToIncomeRatio * 100).toFixed(1)}%). Ratio above 50% indicates severe debt burden.`,
+        severity: 'negative'
+      });
+    } else if (debtToIncomeRatio > 0.4) {
+      riskScore += 18;
+      reasons.push({
+        factor: 'Debt-to-Income Ratio',
+        impact: '+18 risk points',
+        description: `High DTI (${(debtToIncomeRatio * 100).toFixed(1)}%). Ratio between 40-50% indicates significant debt.`,
+        severity: 'negative'
+      });
+    } else if (debtToIncomeRatio > 0.3) {
+      riskScore += 10;
+      reasons.push({
+        factor: 'Debt-to-Income Ratio',
+        impact: '+10 risk points',
+        description: `Moderate DTI (${(debtToIncomeRatio * 100).toFixed(1)}%). Ratio between 30-40% is manageable.`,
+        severity: 'warning'
+      });
+    } else if (debtToIncomeRatio > 0.2) {
+      riskScore += 5;
+      reasons.push({
+        factor: 'Debt-to-Income Ratio',
+        impact: '+5 risk points',
+        description: `Good DTI (${(debtToIncomeRatio * 100).toFixed(1)}%). Ratio between 20-30% shows healthy finances.`,
+        severity: 'positive'
+      });
+    } else {
+      reasons.push({
+        factor: 'Debt-to-Income Ratio',
+        impact: '+0 risk points',
+        description: `Excellent DTI (${(debtToIncomeRatio * 100).toFixed(1)}%). Low debt burden indicates strong finances.`,
+        severity: 'positive'
+      });
+    }
 
     // Income to loan ratio factor (0-20 points)
     const loanToIncomeRatio = loanAmount / annualIncome;
-    if (loanToIncomeRatio > 5) riskScore += 20;
-    else if (loanToIncomeRatio > 3) riskScore += 15;
-    else if (loanToIncomeRatio > 2) riskScore += 10;
-    else if (loanToIncomeRatio > 1) riskScore += 5;
+    if (loanToIncomeRatio > 5) {
+      riskScore += 20;
+      reasons.push({
+        factor: 'Loan-to-Income Ratio',
+        impact: '+20 risk points',
+        description: `Very high loan amount (${loanToIncomeRatio.toFixed(2)}x income). Requesting more than 5x annual income is risky.`,
+        severity: 'negative'
+      });
+    } else if (loanToIncomeRatio > 3) {
+      riskScore += 15;
+      reasons.push({
+        factor: 'Loan-to-Income Ratio',
+        impact: '+15 risk points',
+        description: `High loan amount (${loanToIncomeRatio.toFixed(2)}x income). Loan is 3-5x annual income.`,
+        severity: 'negative'
+      });
+    } else if (loanToIncomeRatio > 2) {
+      riskScore += 10;
+      reasons.push({
+        factor: 'Loan-to-Income Ratio',
+        impact: '+10 risk points',
+        description: `Moderate loan amount (${loanToIncomeRatio.toFixed(2)}x income). Loan is 2-3x annual income.`,
+        severity: 'warning'
+      });
+    } else if (loanToIncomeRatio > 1) {
+      riskScore += 5;
+      reasons.push({
+        factor: 'Loan-to-Income Ratio',
+        impact: '+5 risk points',
+        description: `Reasonable loan amount (${loanToIncomeRatio.toFixed(2)}x income). Loan is within annual income.`,
+        severity: 'positive'
+      });
+    } else {
+      reasons.push({
+        factor: 'Loan-to-Income Ratio',
+        impact: '+0 risk points',
+        description: `Low loan amount (${loanToIncomeRatio.toFixed(2)}x income). Well within repayment capacity.`,
+        severity: 'positive'
+      });
+    }
 
     // Employment length factor (0-10 points)
-    if (employmentLength < 1) riskScore += 10;
-    else if (employmentLength < 2) riskScore += 7;
-    else if (employmentLength < 5) riskScore += 3;
+    if (employmentLength < 1) {
+      riskScore += 10;
+      reasons.push({
+        factor: 'Employment Length',
+        impact: '+10 risk points',
+        description: `Very short employment (${employmentLength} years). Less than 1 year indicates job instability.`,
+        severity: 'negative'
+      });
+    } else if (employmentLength < 2) {
+      riskScore += 7;
+      reasons.push({
+        factor: 'Employment Length',
+        impact: '+7 risk points',
+        description: `Short employment (${employmentLength} years). 1-2 years is below ideal stability.`,
+        severity: 'warning'
+      });
+    } else if (employmentLength < 5) {
+      riskScore += 3;
+      reasons.push({
+        factor: 'Employment Length',
+        impact: '+3 risk points',
+        description: `Moderate employment (${employmentLength} years). Good job stability.`,
+        severity: 'positive'
+      });
+    } else {
+      reasons.push({
+        factor: 'Employment Length',
+        impact: '+0 risk points',
+        description: `Long employment (${employmentLength} years). Excellent job stability.`,
+        severity: 'positive'
+      });
+    }
 
     // Previous defaults factor (0-5 points)
-    riskScore += Math.min(previousDefaults * 5, 5);
+    if (previousDefaults > 0) {
+      const defaultPoints = Math.min(previousDefaults * 5, 5);
+      riskScore += defaultPoints;
+      reasons.push({
+        factor: 'Previous Defaults',
+        impact: `+${defaultPoints} risk points`,
+        description: `${previousDefaults} previous default(s) on record. History of defaults is a major concern.`,
+        severity: 'negative'
+      });
+    } else {
+      reasons.push({
+        factor: 'Previous Defaults',
+        impact: '+0 risk points',
+        description: 'No previous defaults on record. Clean repayment history.',
+        severity: 'positive'
+      });
+    }
 
     // Normalize risk score to percentage (0-100)
     const defaultProbability = Math.min(riskScore, 100);
@@ -61,16 +215,20 @@ serve(async (req) => {
     // Determine risk level and approval
     let riskLevel: string;
     let approved: boolean;
+    let decisionReason: string;
 
     if (defaultProbability < 30) {
       riskLevel = 'low';
       approved = true;
+      decisionReason = 'Application approved due to low risk profile. Strong financial indicators and creditworthiness meet lending criteria.';
     } else if (defaultProbability < 60) {
       riskLevel = 'medium';
       approved = true;
+      decisionReason = 'Application approved with medium risk. Some factors require attention but overall profile is acceptable.';
     } else {
       riskLevel = 'high';
       approved = false;
+      decisionReason = 'Application denied due to high risk factors. Multiple indicators suggest elevated probability of default.';
     }
 
     // Store prediction in database
@@ -117,6 +275,8 @@ serve(async (req) => {
         defaultProbability,
         riskLevel,
         approved,
+        decisionReason,
+        reasons,
         factors: {
           creditScore,
           debtToIncomeRatio,

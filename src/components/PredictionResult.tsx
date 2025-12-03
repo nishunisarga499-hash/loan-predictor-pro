@@ -6,11 +6,20 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from "recha
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 
+interface Reason {
+  factor: string;
+  impact: string;
+  description: string;
+  severity: 'positive' | 'warning' | 'negative';
+}
+
 interface PredictionResultProps {
   result: {
     defaultProbability: number;
     riskLevel: string;
     approved: boolean;
+    decisionReason?: string;
+    reasons?: Reason[];
     factors: {
       creditScore: number;
       debtToIncomeRatio: number;
@@ -22,8 +31,24 @@ interface PredictionResultProps {
 }
 
 export function PredictionResult({ result }: PredictionResultProps) {
-  const { defaultProbability, riskLevel, approved, factors } = result;
+  const { defaultProbability, riskLevel, approved, factors, decisionReason, reasons } = result;
   const { toast } = useToast();
+
+  const getSeverityStyles = (severity: Reason['severity']) => {
+    switch (severity) {
+      case 'positive': return 'border-l-success bg-success/10';
+      case 'warning': return 'border-l-warning bg-warning/10';
+      case 'negative': return 'border-l-destructive bg-destructive/10';
+    }
+  };
+
+  const getSeverityIcon = (severity: Reason['severity']) => {
+    switch (severity) {
+      case 'positive': return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case 'warning': return <AlertCircle className="h-4 w-4 text-warning" />;
+      case 'negative': return <XCircle className="h-4 w-4 text-destructive" />;
+    }
+  };
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -278,13 +303,43 @@ export function PredictionResult({ result }: PredictionResultProps) {
           </div>
         </div>
 
+        {/* Decision Summary */}
         <div className={`p-4 rounded-lg ${approved ? 'bg-success/10' : 'bg-destructive/10'}`}>
           <p className={`font-semibold ${approved ? 'text-success' : 'text-destructive'}`}>
             {approved 
-              ? '✓ Loan Application Approved - Low to Medium Risk' 
-              : '✗ Loan Application Denied - High Risk of Default'}
+              ? '✓ Loan Application Approved' 
+              : '✗ Loan Application Denied'}
           </p>
+          {decisionReason && (
+            <p className="text-sm text-muted-foreground mt-2">{decisionReason}</p>
+          )}
         </div>
+
+        {/* Detailed Reasons */}
+        {reasons && reasons.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-lg">Detailed Analysis</h4>
+            <div className="space-y-2">
+              {reasons.map((reason, index) => (
+                <div 
+                  key={index}
+                  className={`p-3 rounded-lg border-l-4 ${getSeverityStyles(reason.severity)}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      {getSeverityIcon(reason.severity)}
+                      <span className="font-medium">{reason.factor}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {reason.impact}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{reason.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
