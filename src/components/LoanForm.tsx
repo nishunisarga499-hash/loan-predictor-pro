@@ -67,8 +67,7 @@ export function LoanForm({ onSubmit, isLoading }: LoanFormProps) {
               type="number"
               value={formData.annualIncome}
               onChange={(e) => updateField('annualIncome', Number(e.target.value))}
-              min="100000"
-              step="50000"
+              min="0"
               required
             />
           </div>
