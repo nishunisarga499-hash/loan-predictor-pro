@@ -13,6 +13,13 @@ interface PredictionResponse {
   defaultProbability: number;
   riskLevel: string;
   approved: boolean;
+  decisionReason?: string;
+  reasons?: {
+    factor: string;
+    impact: string;
+    description: string;
+    severity: 'positive' | 'warning' | 'negative';
+  }[];
   factors: {
     creditScore: number;
     debtToIncomeRatio: number;
