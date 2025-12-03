@@ -20,6 +20,11 @@ interface PredictionResponse {
     description: string;
     severity: 'positive' | 'warning' | 'negative';
   }[];
+  recommendations?: {
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }[];
   factors: {
     creditScore: number;
     debtToIncomeRatio: number;
