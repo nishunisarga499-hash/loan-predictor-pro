@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, AlertCircle, Download } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Download, Lightbulb } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from "recharts";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,12 @@ interface Reason {
   severity: 'positive' | 'warning' | 'negative';
 }
 
+interface Recommendation {
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
 interface PredictionResultProps {
   result: {
     defaultProbability: number;
@@ -20,6 +26,7 @@ interface PredictionResultProps {
     approved: boolean;
     decisionReason?: string;
     reasons?: Reason[];
+    recommendations?: Recommendation[];
     factors: {
       creditScore: number;
       debtToIncomeRatio: number;
@@ -31,7 +38,7 @@ interface PredictionResultProps {
 }
 
 export function PredictionResult({ result }: PredictionResultProps) {
-  const { defaultProbability, riskLevel, approved, factors, decisionReason, reasons } = result;
+  const { defaultProbability, riskLevel, approved, factors, decisionReason, reasons, recommendations } = result;
   const { toast } = useToast();
 
   const getSeverityStyles = (severity: Reason['severity']) => {
@@ -47,6 +54,22 @@ export function PredictionResult({ result }: PredictionResultProps) {
       case 'positive': return <CheckCircle2 className="h-4 w-4 text-success" />;
       case 'warning': return <AlertCircle className="h-4 w-4 text-warning" />;
       case 'negative': return <XCircle className="h-4 w-4 text-destructive" />;
+    }
+  };
+
+  const getPriorityStyles = (priority: Recommendation['priority']) => {
+    switch (priority) {
+      case 'high': return 'border-l-destructive bg-destructive/10';
+      case 'medium': return 'border-l-warning bg-warning/10';
+      case 'low': return 'border-l-primary bg-primary/10';
+    }
+  };
+
+  const getPriorityBadge = (priority: Recommendation['priority']) => {
+    switch (priority) {
+      case 'high': return <Badge variant="destructive" className="text-xs">High Priority</Badge>;
+      case 'medium': return <Badge variant="outline" className="text-xs border-warning text-warning">Medium Priority</Badge>;
+      case 'low': return <Badge variant="secondary" className="text-xs">Low Priority</Badge>;
     }
   };
 
@@ -262,6 +285,71 @@ export function PredictionResult({ result }: PredictionResultProps) {
       });
     }
 
+    // Recommendations Section
+    if (recommendations && recommendations.length > 0) {
+      // Check if we need a new page
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Recommendations to Improve Eligibility", 15, yPos);
+      yPos += 10;
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(15, yPos, pageWidth - 15, yPos);
+      yPos += 8;
+
+      recommendations.forEach((rec) => {
+        // Check if we need a new page
+        if (yPos > 260) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        // Priority indicator color
+        if (rec.priority === 'high') {
+          doc.setFillColor(254, 226, 226);
+          doc.setDrawColor(220, 38, 38);
+        } else if (rec.priority === 'medium') {
+          doc.setFillColor(254, 249, 195);
+          doc.setDrawColor(202, 138, 4);
+        } else {
+          doc.setFillColor(219, 234, 254);
+          doc.setDrawColor(37, 99, 235);
+        }
+
+        // Draw recommendation box with left border
+        doc.setLineWidth(0.5);
+        doc.roundedRect(15, yPos, pageWidth - 30, 26, 2, 2, 'F');
+        doc.setLineWidth(2);
+        doc.line(15, yPos, 15, yPos + 26);
+
+        // Title and priority
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(rec.title, 20, yPos + 7);
+
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        const priorityText = rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1) + ' Priority';
+        doc.text(priorityText, pageWidth - 20, yPos + 7, { align: "right" });
+
+        // Description
+        doc.setFontSize(8);
+        doc.setTextColor(75, 85, 99);
+        const recText = doc.splitTextToSize(rec.description, pageWidth - 50);
+        doc.text(recText, 20, yPos + 14);
+
+        yPos += 30;
+      });
+    }
+
     // Footer on last page
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -399,6 +487,30 @@ export function PredictionResult({ result }: PredictionResultProps) {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{reason.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommendations */}
+        {recommendations && recommendations.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-lg flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-primary" />
+              Recommendations to Improve Eligibility
+            </h4>
+            <div className="space-y-2">
+              {recommendations.map((rec, index) => (
+                <div 
+                  key={index}
+                  className={`p-3 rounded-lg border-l-4 ${getPriorityStyles(rec.priority)}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium">{rec.title}</span>
+                    {getPriorityBadge(rec.priority)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{rec.description}</p>
                 </div>
               ))}
             </div>

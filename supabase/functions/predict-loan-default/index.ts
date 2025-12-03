@@ -231,6 +231,80 @@ serve(async (req) => {
       decisionReason = 'Application denied due to high risk factors. Multiple indicators suggest elevated probability of default.';
     }
 
+    // Generate personalized recommendations
+    const recommendations: { title: string; description: string; priority: 'high' | 'medium' | 'low' }[] = [];
+
+    if (creditScore < 740) {
+      recommendations.push({
+        title: 'Improve Credit Score',
+        description: creditScore < 580 
+          ? 'Focus on paying bills on time, reducing credit card balances below 30% utilization, and disputing any errors on your credit report. Consider a secured credit card to rebuild credit.'
+          : creditScore < 670
+          ? 'Continue making timely payments and keep credit utilization low. Avoid opening new credit accounts unnecessarily.'
+          : 'Your credit is good but could be excellent. Maintain low balances and avoid late payments to reach 740+.',
+        priority: creditScore < 580 ? 'high' : creditScore < 670 ? 'medium' : 'low'
+      });
+    }
+
+    if (debtToIncomeRatio > 0.3) {
+      recommendations.push({
+        title: 'Reduce Debt-to-Income Ratio',
+        description: debtToIncomeRatio > 0.5
+          ? 'Your debt burden is critical. Prioritize paying off high-interest debts first. Consider debt consolidation or speak with a financial advisor.'
+          : debtToIncomeRatio > 0.4
+          ? 'Focus on reducing existing debts before taking new loans. Pay more than minimum payments on credit cards and consider balance transfers.'
+          : 'Pay down existing debts to get your DTI below 30%. This will significantly improve your loan eligibility.',
+        priority: debtToIncomeRatio > 0.4 ? 'high' : 'medium'
+      });
+    }
+
+    if (loanToIncomeRatio > 2) {
+      recommendations.push({
+        title: 'Consider a Smaller Loan Amount',
+        description: loanToIncomeRatio > 5
+          ? 'The requested loan is too high relative to your income. Consider reducing the loan amount by at least 50% or increasing your income sources.'
+          : loanToIncomeRatio > 3
+          ? 'Try reducing the loan amount to less than 3x your annual income, or wait until your income increases.'
+          : 'A loan closer to 2x your annual income would have better approval chances.',
+        priority: loanToIncomeRatio > 3 ? 'high' : 'medium'
+      });
+    }
+
+    if (employmentLength < 2) {
+      recommendations.push({
+        title: 'Build Employment History',
+        description: employmentLength < 1
+          ? 'Lenders prefer at least 1-2 years at current job. Consider waiting to apply, or provide additional income documentation if you have a stable employment history.'
+          : 'Continue in your current role to build stability. After 2 years, your employment will be viewed more favorably.',
+        priority: employmentLength < 1 ? 'high' : 'medium'
+      });
+    }
+
+    if (previousDefaults > 0) {
+      recommendations.push({
+        title: 'Address Previous Defaults',
+        description: 'Work on rehabilitating your credit by settling any outstanding defaults. Some lenders may consider applications after 2-3 years of clean credit history post-default.',
+        priority: 'high'
+      });
+    }
+
+    if (numberOfOpenAccounts > 5) {
+      recommendations.push({
+        title: 'Consolidate Credit Accounts',
+        description: 'Having many open accounts can indicate overextension. Consider closing unused accounts and consolidating balances to simplify your credit profile.',
+        priority: 'low'
+      });
+    }
+
+    // Add positive reinforcement if doing well
+    if (recommendations.length === 0) {
+      recommendations.push({
+        title: 'Maintain Your Strong Profile',
+        description: 'Your financial profile is excellent! Continue your current financial habits. Consider shopping for the best interest rates as you qualify for premium loan products.',
+        priority: 'low'
+      });
+    }
+
     // Store prediction in database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -277,6 +351,7 @@ serve(async (req) => {
         approved,
         decisionReason,
         reasons,
+        recommendations,
         factors: {
           creditScore,
           debtToIncomeRatio,
